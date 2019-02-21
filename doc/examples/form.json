@@ -1,0 +1,46 @@
+{
+  "id": 1,
+  "type": "FORM",
+  "attributes": {
+    "name": "first"
+  },
+  "children": [
+    {
+      "id": 2,
+      "type": "FIELD",
+      "attributes": {
+        "name": "hasSoldHouse",
+        "label": "What is love?",
+        "type": "boolean"
+      }
+    },
+    {
+      "id": 3,
+      "type": "IF",
+      "attributes": {},
+      "children": [
+        {
+          "id": 4,
+          "name": "PREDICATE",
+          "type": "EXPRESSION",
+          "children": [
+            {
+              "id": 5,
+              "type": "VARIABLE",
+              "attributes": {
+                "name": "hasSoldHouse"
+              }
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "name": "THEN",
+          "type": "BLOCK",
+          "children": [
+          ]
+        }
+      ]
+    }
+  ]
+}

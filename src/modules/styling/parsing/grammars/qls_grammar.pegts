@@ -1,0 +1,222 @@
+/*
+ * Grammar for Questionnaire Language Styling
+ *
+ * The header consists of JavaScript helper functions and variables
+ * that can be used inside PEG.js, as PEG.js has is't own syntax which
+ * doesn't allow the declaration of function outside a pattern.
+ *
+ */
+
+{
+  const widgetMapping = {
+    "spinbox"  : Nodes.SpinBoxWidgetAttribute,
+    "text"     : Nodes.TextWidgetAttribute,
+    "slider"   : Nodes.SliderWidgetAttribute,
+    "dropdown" : Nodes.DropdownWidgetAttribute,
+    "checkbox" : Nodes.CheckboxWidgetAttribute,
+    "radio"    : Nodes.RadioWidgetAttribute
+  }
+
+  const baseAttributeMapping = {
+    "color"    : Nodes.ColorAttribute,
+    "width"    : Nodes.WidthAttribute,
+    "fontsize" : Nodes.FontSizeAttribute,
+    "font"     : Nodes.FontAttribute
+  }
+}
+
+Root
+  = __ stylesheet:Stylesheet __ {
+    return stylesheet
+}
+
+Stylesheet
+ = StylesheetToken _ identifier:Identifier __ "{" __ page:Page+ __ "}" __ {
+    return new Nodes.Stylesheet( identifier, page );
+}
+
+Page
+  = PageToken _ identifier:Identifier __ block:PageBlock __ {
+    return new Nodes.Page( identifier, block );
+}
+
+PageBlock
+  = "{" __ body:(Section / Default)+ __ "}" __ {
+    return body;
+}
+
+Section
+  = SectionToken _ name:StringLiteral __ block:SectionBlock __ {
+    return new Nodes.Section( name, block );
+}
+
+SectionBlock
+  = "{" __ body:(Question / Section / Default)+ __ "}" {
+    return body
+}
+
+Question
+  = QuestionToken _ identifier:Identifier __ body:StyleBlock? __ {
+    body = body ? body : [];
+    return new Nodes.QuestionStyle( identifier, body );
+}
+
+Default
+  = DefaultToken _ type:Types __ body:StyleBlock __ {
+    return new Nodes.DefaultStyle( type, body );
+ }
+
+StyleBlock
+  = StyleBlockNoBrackets
+  / StyleBlockBrackets
+
+StyleBlockBrackets
+  = "{" __ body:StyleBlockNoBrackets __ "}" {
+    return body;
+}
+
+StyleBlockNoBrackets
+  = body:StyleAttribute+ {
+    return body;
+}
+
+StyleAttribute
+  = WidgetAttribute
+  / BaseAttribute
+
+WidgetAttribute
+  = WidgetToken _ identifier:Widgets options:WidgetOptions? __ {
+    const WidgetAttributeConstructor = widgetMapping[identifier];
+    return new WidgetAttributeConstructor( options );
+}
+
+WidgetOptions
+  = "(" _ options:Options _ ")" __ {
+    return options;
+}
+
+Options
+  = head:StringLiteral next:( _ "," _ rest:Options { return rest; } )? {
+    return next != null ? [head].concat(next) : [head];
+}
+
+BaseAttribute "Base attribute"
+  = identifier:BaseAttributes _ ":" _ args:BaseAttributeValues __ {
+    const BaseAttributeConstructor = baseAttributeMapping[identifier];
+    return new BaseAttributeConstructor( args );
+}
+
+BaseAttributeValues
+  = NumberLiteral
+  / StringLiteral
+  / ColorLiteral
+
+ColorLiteral "Color literal"
+  = ["#"][0-9]+ {
+    return text();
+}
+
+Identifier
+  = Alphabet AlphabetOrNumbers+ {
+    return text();
+}
+
+NumberLiteral "Number literal"
+  = [-]?[0-9]+ {
+    return parseInt(text(), 10)
+}
+
+// String Literal, Currently only support double quoted Strings
+StringLiteral "String literal"
+  = '"' chars:DoubleQuotedStringCharacters* '"'{
+    return chars.join('');
+}
+
+DoubleQuotedStringCharacters
+  = !('"' / "\\") char:. { return char; }
+  / "\\" sequence:EscapeSequence { return sequence; }
+
+EscapeSequence
+  = "'"
+  / '"'
+  / "\\"
+  / "b"  { return "\b";   }
+  / "f"  { return "\f";   }
+  / "n"  { return "\n";   }
+  / "r"  { return "\r";   }
+  / "t"  { return "\t";   }
+  / "v"  { return "\x0B"; }
+
+Types
+  = "boolean"
+  / "money"
+  / "date"
+  / "integer"
+  / "decimal"
+  / "text"
+
+Widgets "Widget"
+  = "spinbox"
+  / "text"
+  / "slider"
+  / "dropdown"
+  / "checkbox"
+  / "radio"
+
+BaseAttributes "Base style attribute"
+  = "color"
+  / "width"
+  / "fontsize"
+  / "font"
+
+StylesheetToken = "stylesheet"
+PageToken = "page"
+SectionToken = "section"
+QuestionToken = "question"
+DefaultToken =  "default"
+WidgetToken = "widget"
+BooleanToken = "true" / "false"
+
+Alphabet
+  = [a-zA-Z]
+
+Numbers
+  = [0-9]
+
+AlphabetOrNumbers
+  = Alphabet
+  / Numbers
+
+WhiteSpace "Whitespace"
+  = "\t"
+  / "\v"
+  / "\f"
+  / " "
+  / "\u00A0"
+  / "\uFEFF"
+
+_ = (WhiteSpace / MultiLineCommentNoLineTerminator)*
+__ = (WhiteSpace / LineTerminatorSequence / Comment)*
+
+LineTerminatorSequence "End of line"
+  = "\n"
+  / "\r\n"
+  / "\r"
+  / "\u2028"
+  / "\u2029"
+
+LineTerminator
+    = [\n\r\u2028\u2029]
+
+Comment "Comment"
+  = MultiLineComment
+  / SingleLineComment
+
+SingleLineComment
+  = "//" (!LineTerminator .)*
+
+MultiLineComment
+  = "/*" (!"*/" .)* "*/"
+
+MultiLineCommentNoLineTerminator
+  = "/*" (!("*/" / LineTerminator) .)* "*/"

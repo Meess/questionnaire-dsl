@@ -1,0 +1,33 @@
+form taxOfficeExample {
+  "How heavy is the fish?"
+    weightFishOne: integer
+  "How heavy is the other fish precisely?"
+    weightFishTwo: decimal
+  "How heavy is the third fish precisely?"
+    weightFishThree: decimal
+  "Weight of fish 1 and 2"
+    weightFishOneAndTwo: decimal = (weightFishOne + weightFishTwo)
+  "Weight of all fishes"
+    weightAllFishes: decimal = (weightFishOneAndTwo + weightFishThree)
+  "When do you want to buy your next house"
+    whenNextHouse: date
+  "Did you sell a house in 2010?"
+    hasSoldHouse: boolean
+  "Did you buy a house in 2010?"
+    hasBoughtHouse: boolean
+  "Did you enter a loan?"
+    hasMainLoan: boolean
+
+  if (hasSoldHouse) {
+    "What was the selling price?"
+      sellingPrice: money
+    "Private debts for the sold house:"
+      privateDebt: money
+    "Value residue:"
+      valueResidue: money =
+        (sellingPrice - privateDebt)
+  } else {
+      "Why did you not sell your house in 2010?"
+        notSellHouseReason: text
+  }
+}

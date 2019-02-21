@@ -1,0 +1,294 @@
+/*
+ * Grammar for the Questionnaire Language
+ *
+ * The header consists of JavaScript helper functions and variables
+ * that can be used inside PEG.js, as PEG.js has is't own syntax which
+ * doesn't allow the declaration of functions outside a pattern.
+ *
+ * Nodes and Fieldtype are imported through the pegconfig.json file.
+ */
+
+{
+  const operationToClassMapping = {
+    "&&" : Nodes.And,
+    "||" : Nodes.Or,
+    "<=" : Nodes.SmallerThanOrEqual,
+    ">=" : Nodes.LargerThanOrEqual,
+    "!=" : Nodes.NotEqual,
+    "==" : Nodes.Equals,
+    "<"  : Nodes.SmallerThan,
+    ">"  : Nodes.LargerThan,
+    "+"  : Nodes.Addition,
+    "-"  : Nodes.Subtraction,
+    "*"  : Nodes.Multiplication,
+    "/"  : Nodes.Division
+  }
+
+  const typeMapping = {
+    "boolean" : FieldType.Boolean,
+    "date"    : FieldType.Date,
+    "money"   : FieldType.Money,
+    "integer" : FieldType.Integer,
+    "decimal" : FieldType.Decimal,
+    "text"    : FieldType.Text
+  }
+
+  function makeOperationNode(leftNode, nextRight) {
+    const operation = nextRight[1];
+    const rightNode = nextRight[3];
+    const OperationConstructor = operationToClassMapping[operation];
+    const operationNode = new OperationConstructor(leftNode, rightNode);
+    return operationNode.setLocation(location());
+  }
+
+  function makeExpressionNode(leftNode, tail) {
+    const expressionNode = tail.reduce(makeOperationNode, leftNode);
+    return expressionNode;
+  }
+}
+
+Root
+  = __ forms:Form+ __ {
+    return forms;
+}
+
+Form
+  = FormToken _ identifier:Identifier __ block:Block {
+   const formNode = new Nodes.FormNode(identifier, block);
+   return formNode.setLocation(location());
+}
+
+Block
+  = "{" __ body:(Field / IfCondition)+ __ "}" __ {
+    return body;
+}
+
+Field
+  = string:StringLiteral __ identifier:Identifier _ ":" _ type:FieldType __ expression:("=" __ Expression)? __ {
+    const label = string.value;
+    if (expression) {
+      const computedFieldNode = new Nodes.ComputedField(identifier, label, type, expression[2]);
+      return computedFieldNode.setLocation(location());
+    }
+    const questionNode = new Nodes.Question(identifier, label, type);
+    return questionNode.setLocation(location());
+}
+
+FieldType
+  = fieldType:Types {
+    return typeMapping[fieldType];
+}
+
+IfCondition
+  = IfToken _ predicate:ExpressionWithBrackets __ thenBlock:Block __ elseBlock:Else? __ {
+    const IfConditionNode = new Nodes.IfCondition(predicate, thenBlock, elseBlock);
+    return IfConditionNode.setLocation(location());
+}
+
+Else
+  = ElseToken __ block:Block __ {
+    return block;
+}
+
+Expression
+  = expression:BooleanExpression {
+    return expression;
+}
+
+ExpressionWithBrackets
+  = "("_ expression:Expression _ ")" {
+    return expression;
+}
+
+BooleanExpression
+  = head:ComparisonExpression _ tail:(_ BoolOps _ ComparisonExpression)+ _ {
+    return makeExpressionNode(head, tail);
+  }
+  / ComparisonExpression
+
+ComparisonExpression
+  = head:AdditiveExpression _ tail:(_ CompOps _ AdditiveExpression)+ _ {
+    return makeExpressionNode(head, tail);
+  }
+  / AdditiveExpression
+
+AdditiveExpression
+  = head:MultiplicativeExpression _ tail:(_ AddOps _ MultiplicativeExpression)+ _{
+    return makeExpressionNode(head, tail);
+  }
+  / MultiplicativeExpression
+
+MultiplicativeExpression
+  = head:ExpressionElement _ tail:(_ MultOps _ ExpressionElement)+ _{
+    return makeExpressionNode(head, tail);
+  }
+  / ExpressionElement
+
+ExpressionElement
+  = Value
+  / ExpressionWithBrackets
+  / UnaryExpression
+
+UnaryExpression
+  = UnaryOps value:ExpressionElement _ {
+    const unaryExpressionNode = new Nodes.Negation(value);
+    return unaryExpressionNode.setLocation(location());
+}
+
+ExpressionVariableIdentifier
+  = Identifier {
+    const identifierNode = new Nodes.VariableIdentifier(text());
+    return identifierNode.setLocation(location());
+}
+
+Identifier
+  = !Keywords Alphabet AlphabetOrNumbers+ {
+    return text();
+}
+
+BooleanLiteral
+  = BooleanToken {
+    const booleanLiteralNode = new Nodes.BooleanLiteral(text() === "true");
+    return booleanLiteralNode.setLocation(location());
+}
+
+NumberLiteral
+  = [-]?[0-9\.]+ {
+    const numberLiteralNode = Nodes.NumberLiteral.fromString(text());
+    return numberLiteralNode.setLocation(location());
+}
+
+DateLiteral
+  = Day DateSeparator Month DateSeparator Year {
+    const dateLiteralNode = Nodes.DateLiteral.fromString(text());
+    return dateLiteralNode.setLocation(location());
+}
+
+Day
+  = Numbers Numbers
+
+Month
+  = Numbers Numbers
+
+Year
+  = Numbers Numbers Numbers Numbers
+
+DateSeparator
+  = [\.]
+
+// String Literal, only support double quoted Strings
+StringLiteral "String literal"
+  = '"' chars:DoubleQuotedStringCharacters* '"' {
+    const stringLiteralNode = new Nodes.StringLiteral(chars.join(''));
+    return stringLiteralNode.setLocation(location());
+}
+
+DoubleQuotedStringCharacters
+  = !('"' / "\\") char:. { return char; }
+  / "\\" sequence:EscapeSequence { return sequence; }
+
+EscapeSequence
+  = "'"
+  / '"'
+  / "\\"
+  / "b"  { return "\b";   }
+  / "f"  { return "\f";   }
+  / "n"  { return "\n";   }
+  / "r"  { return "\r";   }
+  / "t"  { return "\t";   }
+  / "v"  { return "\x0B"; }
+
+Value
+  = ExpressionVariableIdentifier
+  / DateLiteral
+  / NumberLiteral
+  / StringLiteral
+  / BooleanLiteral
+
+BoolOps
+  = "&&"
+  / "||"
+
+CompOps
+  = "<="
+  / ">="
+  / "!="
+  / "=="
+  / "<"
+  / ">"
+
+AddOps
+  = "+"
+  / "-"
+
+MultOps
+  = "*"
+  / "/"
+
+UnaryOps
+  = "!"
+
+Types
+  = "boolean"
+  / "money"
+  / "date"
+  / "integer"
+  / "decimal"
+  / "text"
+
+BooleanToken
+  = BooleanTrue !AlphabetOrNumbers
+  / BooleanFalse !AlphabetOrNumbers
+
+BooleanTrue = "true"
+BooleanFalse = "false"
+
+IfToken = "if" !AlphabetOrNumbers
+ElseToken = "else" !AlphabetOrNumbers
+FormToken = "form" !AlphabetOrNumbers
+
+Keywords = BooleanToken
+
+Alphabet
+  = [a-zA-Z]
+
+Numbers
+  = [0-9]
+
+AlphabetOrNumbers
+  = Alphabet
+  / Numbers
+
+_ = (WhiteSpace / MultiLineCommentNoLineTerminator)*
+__ = (WhiteSpace / LineTerminatorSequence / Comment)*
+
+WhiteSpace "Whitespace"
+  = "\t"
+  / "\v"
+  / "\f"
+  / " "
+  / "\u00A0"
+  / "\uFEFF"
+
+LineTerminatorSequence "End of line"
+  = "\n"
+  / "\r\n"
+  / "\r"
+  / "\u2028"
+  / "\u2029"
+
+LineTerminator
+  = [\n\r\u2028\u2029]
+
+Comment "Comment"
+  = MultiLineComment
+  / SingleLineComment
+
+SingleLineComment
+  = "//" (!LineTerminator .)*
+
+MultiLineComment
+  = "/*" (!"*/" .)* "*/"
+
+MultiLineCommentNoLineTerminator
+  = "/*" (!("*/" / LineTerminator) .)* "*/"

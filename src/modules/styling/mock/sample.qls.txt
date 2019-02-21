@@ -1,0 +1,65 @@
+stylesheet taxOfficeExample
+{
+  page Fish
+  {
+    section "User input"
+    {
+      question weightFishOne
+      question weightFishTwo
+      question weightFishThree
+    }
+    section "Complex fish calculations"
+    {
+       question weightFishOneAndTwo
+       question weightAllFishes
+    }
+  }
+  page Housing
+  {
+    section "Buying"
+    {
+      question hasBoughtHouse
+        widget checkbox("Yes", "No")
+    }
+    section "Loaning"
+    {
+      question hasMainLoan
+    }
+  }
+
+  page Selling
+  {
+    section "Selling"
+    {
+      question whenNextHouse
+      question hasSoldHouse
+        widget radio("Yes", "No")
+      section "You sold a house"
+      {
+        question sellingPrice
+          widget spinbox
+        question privateDebt
+        {
+          widget text
+          font: "Comic Sans Ms"
+          color: "red"
+          width: 300
+        }
+        question valueResidue
+        default money
+        {
+          width: 500
+          font: "Arial"
+          fontsize: 14
+          color: #999999
+          widget spinbox
+        }
+      }
+      section "You did not sell a house"
+      {
+        question notSellHouseReason
+      }
+    }
+    default boolean widget radio("Yes", "No")
+  }
+}

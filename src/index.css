@@ -1,0 +1,57 @@
+h1.title img {
+    height: 45px;
+}
+
+h1.title {
+    color: white;
+    text-align: center;
+    margin-bottom: 20px;
+    border-bottom: 3px solid #4b6584;
+    background: #778ca3;
+    padding: 10px;
+}
+
+.app {
+    padding: 20px 0;
+}
+
+.ql-sample-output textarea[name=ql_input] {
+    height: calc(100vh - 50px);
+    min-height: 500px;
+}
+
+.ql-form {
+    padding: 10px;
+    background: #eeeeee;
+    border: 1px solid #cccccc;
+    font-family: "Times New Roman", serif;
+}
+
+.ql-form h1 {
+    font-size: 18px;
+    font-weight: bold;
+    border-bottom: 1px solid #dddddd;
+}
+
+.state-output-container textarea {
+    min-height: 500px;
+}
+
+.react-datepicker__input-container, .react-datepicker-wrapper {
+    display: block;
+}
+
+fieldset.questionnaire-section {
+    border: 1px solid #eee;
+    padding: 10px;
+}
+
+fieldset.questionnaire-section fieldset.questionnaire-section {
+    margin-top: 10px;
+}
+
+fieldset.questionnaire-section legend {
+    width: auto;
+    font-size: 1em;
+    padding: 5px;
+}

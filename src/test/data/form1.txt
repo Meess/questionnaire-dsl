@@ -1,0 +1,9 @@
+form taxOfficeExample {
+  "Did you sell a house in 2010?"
+    visibleField: boolean
+
+  if (!hasSoldHouse) {
+    "What was the selling price?"
+      invisibleField: money
+  }
+}

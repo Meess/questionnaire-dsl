@@ -1,0 +1,40 @@
+{
+  "id": 9,
+  "type": "FIELD",
+  "attributes": {
+    "name": "valueResidue",
+    "label": "Value residue:",
+    "type": "money"
+  },
+  "children": [
+    {
+      "id": 10,
+      "type": "EXPRESSION",
+      "name": "FORMULA",
+      "children": [
+        {
+          "id": 11,
+          "type": "MINUS",
+          "children": [
+            {
+              "id": 12,
+              "type": "VARIABLE",
+              "name": "LEFT",
+              "attributes": {
+                "name": "sellingPrice"
+              }
+            },
+            {
+              "id": 13,
+              "type": "VARIABLE",
+              "name": "RIGHT",
+              "attributes": {
+                "name": "privateDebt"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
